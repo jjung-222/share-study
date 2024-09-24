@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { Dispatch, SetStateAction, useState } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isToday, isSameDay } from 'date-fns';
 import ArrowIcon from '../icons/ArrowIcon';
 
 interface CalendarProps {
   initialDate?: Date;
+  selectedDate: Date | null;
+  onDateChange: Dispatch<SetStateAction<Date | null>>;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ initialDate = new Date() }) => {
+const Calendar: React.FC<CalendarProps> = ({ initialDate = new Date(), selectedDate, onDateChange }) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(initialDate));
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Get start and end of the month
   const firstDayOfMonth = startOfMonth(currentMonth);
@@ -58,7 +59,7 @@ const Calendar: React.FC<CalendarProps> = ({ initialDate = new Date() }) => {
               </div>
               <div
                 className="flex-1 flex items-center justify-center"
-                onClick={() => setSelectedDate(day)}
+                onClick={() => onDateChange(day)} // Use the onDateChange function from props
               >
                 <div className={`w-12 h-12 flex items-center justify-center ${isToday(day) ? 'bg-pink-600 text-white rounded-full' : ''} ${isSameDay(day, selectedDate) ? 'bg-blue-500 text-white rounded-full' : ''} rounded-full`}>
                   <span className="text-lg">{day.getDate()}</span>

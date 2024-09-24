@@ -1,24 +1,25 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { format } from 'date-fns'; // date-fns가 import 되어있는지 확인하세요
+import { format } from 'date-fns';
+import {MarkComma} from '../../../src/utils/CommonFunc'
 
 interface Event {
   id: number;
   title: string;
+  amount: number;
   date: string; // 'YYYY-MM-DD' 형식
 }
 
 interface ScheduleListProps {
-  events: Event[];
+  expenses: Event[];
   selectedDate: Date | null; // Add this prop
 }
 
-const ScheduleList: React.FC<ScheduleListProps> = ({ events, selectedDate }) => {
+const DailyExpenseList: React.FC<ScheduleListProps> = ({ expenses, selectedDate }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [monthYear, setMonthYear] = useState('');
   const [changeFlag, setChangeFlag] = useState(false);
   
-  // Create a ref for each date row
-  const dateRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const expenseDateRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const getDateRange = (date: Date) => {
     const year = date.getFullYear();
@@ -40,30 +41,28 @@ const ScheduleList: React.FC<ScheduleListProps> = ({ events, selectedDate }) => 
     setMonthYear(currentDate.toLocaleString('ko-KR', { year: 'numeric', month: 'long' }));
   }, [currentDate]);
 
-  // Scroll to the selected date and update current month when selectedDate changes
   useEffect(() => {
     if (selectedDate) {
       const dateString = format(selectedDate, 'yyyy-MM-dd');
-
-      // Update current month to match selected date
       setCurrentDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth()));
-      setChangeFlag(true)
+      setChangeFlag(true);
     }
   }, [selectedDate]);
 
   useEffect(() => {
     if (selectedDate) {
       const dateString = format(selectedDate, 'yyyy-MM-dd');
-
-      const ref = dateRefs.current[dateString];
+      const ref = expenseDateRefs.current[dateString];
       if (ref) {
-        ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 800);
       }
-      setChangeFlag(false)
+      setChangeFlag(false);
     }
   }, [changeFlag]);
 
-  const groupedEvents = events.reduce((acc: { [key: string]: Event[] }, event) => {
+  const groupedEvents = expenses.reduce((acc: { [key: string]: Event[] }, event) => {
     const date = event.date;
     if (!acc[date]) {
       acc[date] = [];
@@ -77,11 +76,10 @@ const ScheduleList: React.FC<ScheduleListProps> = ({ events, selectedDate }) => 
     const isSaturday = day === 6;
     const isSunday = day === 0;
 
-    // Store the ref for each date
-    const dateRef = React.createRef<HTMLDivElement>();
+    const expenseDateRef = React.createRef<HTMLDivElement>();
     useEffect(() => {
-        dateRefs.current[dateString] = dateRef.current;
-    }, [dateRef, dateString]);
+        expenseDateRefs.current[dateString] = expenseDateRef.current;
+    }, [expenseDateRef, dateString]);
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -91,26 +89,51 @@ const ScheduleList: React.FC<ScheduleListProps> = ({ events, selectedDate }) => 
 
     return (
         <div
-            ref={dateRef} // Attach ref to the row
+            ref={expenseDateRef}
             id={`date-${dateString}`}
-            className={`flex flex-col justify-start p-4 border-b ${backgroundColor} ${isSaturday ? 'text-gray-500' : isSunday ? 'text-red-500' : 'text-black'}`}
+            className={`flex flex-col p-3 border-b ${backgroundColor} ${isSaturday ? 'text-gray-500' : isSunday ? 'text-red-500' : 'text-black'}`}
         >
             <div className="flex justify-between items-center">
-                <div className="w-2/5">{dateString.split('-')[2]}</div>
-                <div className="w-3/5">
-                    {groupedEvents[dateString]?.map(event => (
-                        <div key={event.id} className="my-1">
-                            {event.title}
+                {/* 날짜 영역 */}
+                <div className="w-1/5 text-left">{dateString.split('-')[2]}</div>
+
+                <div className="w-4/5 flex flex-col">
+                    {groupedEvents[dateString]?.map(expense => (
+                        <div key={expense.id} className="flex justify-between items-center">
+                            {/* 음수 amount (지출) */}
+                            {expense.amount < 0 ?
+                                <div className="w-1/3 text-left">
+                                    {MarkComma(expense.amount)} 원 {/* 음수 amount 표시 */}
+                                </div> :
+                                <div className="w-1/3 text-left"></div>
+                            }
+                            {/* 제목 영역 */}
+                            <div className="w-1/3 text-center">
+                                {expense.title}
+                            </div>
+                            {/* 양수 amount (수입) */}
+                            {expense.amount > 0 ?
+                                <div className="w-1/3 text-right">
+                                    +{MarkComma(expense.amount)} 원 {/* 양수 amount 표시 */}
+                                </div> :
+                                <div className="w-1/3 text-right"></div> 
+                            }
                         </div>
-                    )) || <div className="my-1 text-gray-400">일정 없음</div>}
+                    )) || <div className="my-1 text-gray-400 text-center">변동 없음</div>}
                 </div>
             </div>
+
+            {/* 요일 표시 */}
             <div className={`text-xs ${isSaturday ? 'text-gray-500' : isSunday ? 'text-red-500' : 'text-black'}`}>
                 {weekDays[day]}
             </div>
         </div>
     );
 };
+
+
+
+
 
 
   const changeMonth = (offset: number) => {
@@ -134,4 +157,4 @@ const ScheduleList: React.FC<ScheduleListProps> = ({ events, selectedDate }) => 
   );
 };
 
-export default ScheduleList;
+export default DailyExpenseList;
